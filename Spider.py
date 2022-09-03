@@ -1,13 +1,16 @@
-from os import system
-from platform import processor
+import sys
 from bs4 import BeautifulSoup as BS
 import requests as R
 import json
+import argparse
 
 # CONSTANTS =====================================================================================
 URL = "https://store.steampowered.com/search?query&start={}&count={}&sort_by=Released_DESC&force_infinite=1&category1=998&infinite=1"
 EXTRACTED_LINKS = []
 OUTPUT_BUFFER = {}
+ITERATIONS = None
+COUNT = None
+OUTPUT_FILE_NAME = None
 #TEMPLATE = {
 #    "NAME": None,
 #    "GENRES": [],
@@ -28,12 +31,23 @@ OUTPUT_BUFFER = {}
 # REQUEST A LINK LIST FROM STEAM
 #================================================================================================
 def pull_links():
-    print("[*] REQUESTING LINKS FROM THE STEAM...")
-    steamResponse = R.get(URL.format(0, 10))
-    print("[+] RESPONSE RECIEVED...")
+    request_start = 0
+    for i in range(ITERATIONS):
+        print("[*] STEAM REQUEST ITERATIONS: {}".format(i))
+        try:
+            print("[*] SENDING REQUEST TO STEAM...")
+            print("[i] REQUEST: {}".format(URL.format(request_start, COUNT)))
+            steamResponse = R.get(URL.format(request_start, COUNT))
+            print("[+] RESPONSE RECIEVED...")
 
-    steamResponse.encoding = 'UTF-8'
-    extract_links(steamResponse.json()['results_html'])
+            steamResponse.encoding = 'UTF-8'
+            extract_links(steamResponse.json()['results_html'])
+
+            request_start += COUNT
+        except Exception as E:
+            print(E)
+
+    crawl_links()
 
 #================================================================================================
 # EXTRACT & STORE LINKS FROM THE RESPONSE
@@ -50,8 +64,6 @@ def extract_links(htmlBuffer):
         print("[+] NEW LINK FOUND: {}".format(link))
         EXTRACTED_LINKS.append(link)
     print("=" * 100)
-
-    crawl_links()
 
 #================================================================================================
 # FOLLOW EACH LINK AND GET THE APP PAGE
@@ -82,23 +94,24 @@ def extract_data(htmlBuffer, appLink):
         "STEAM_LINK": None,
         "SYSTEM_REQUIREMENTS":{
             "PROCESSORS":[],
-            "GRAPHIC_CARDS": [],
+            "GRAPHICS": [],
             "MEMORY": None,
             "STORAGE": None,
         }
     }
+    
     appPage = BS(htmlBuffer, 'lxml')
 
-    #enter link to capsul
+    #enter link to capsul ===============================================================
     dataCapsul["STEAM_LINK"] = appLink
     print("[+] WEBPAGE LINK ADDED: {}".format(appLink))
 
-    #extract name
+    #extract name ========================================================================
     appName = appPage.find('div', id="appHubAppName").text
     dataCapsul["NAME"] = appName
     print("[+] APP NAME ADDED: {}".format(appName))
 
-    #extract genres + developer
+    #extract genres + developer ==========================================================
     detailsElement = appPage.find('div', id="genresAndManufacturer")
     linksInElement = detailsElement.find_all('a')
     
@@ -109,19 +122,22 @@ def extract_data(htmlBuffer, appLink):
             genre = link.text
             dataCapsul["GENRES"].append(genre)
             print("[+] NEW GENRE ADDED: {}".format(genre))
-        elif("/?developer=" in href):
+        elif("developer" in href):
             dev = link.text
             dataCapsul["DEVELOPER"] = dev
             print("[+] APP DEVELOPER FOUND: {}".format(dev))
 
-    #extract release year
+    #extract release year ===============================================================
     dateElement = appPage.find('div', class_='date')
-    date = dateElement.text.split(',')[-1].strip()
+    if(dateElement == None):
+        date = 0000
+    else:
+        date = dateElement.text.split(',')[-1].strip()
 
     dataCapsul["RELEASE_YEAR"] = date
     print("[+] APP RELEASE DATE ADDED: {}".format(date))
 
-    #extract tags
+    #extract tags =======================================================================
     appTagElements = appPage.find_all('a', class_="app_tag")
     
     for tagElement in appTagElements:
@@ -150,19 +166,19 @@ def extract_data(htmlBuffer, appLink):
                 print("[+] COMPATIBLE PROESSOR ADDED: {}".format(processor))
 
             if("Memory" in dataName):
-                memory = listElement.text.replace("Memroy:", "").strip()
+                memory = listElement.text.replace("Memory:", "").strip()
                 dataCapsul["SYSTEM_REQUIREMENTS"]["MEMORY"] = memory
-                print("[+] COMPATIBLE PROESSOR ADDED: {}".format(memory))
+                print("[+] REQUIRED MEMORY CAPACITY ADDED: {}".format(memory))
 
             if("Graphics" in dataName):
                 graphics = listElement.text.replace("Graphics:", "").strip()
-                dataCapsul["SYSTEM_REQUIREMENTS"]["GRAPHIC_CARDS"].append(graphics)
-                print("[+] COMPATIBLE PROESSOR ADDED: {}".format(graphics))
+                dataCapsul["SYSTEM_REQUIREMENTS"]["GRAPHICS"].append(graphics)
+                print("[+] COMPATIBLE GRAPHIC CARD ADDED: {}".format(graphics))
 
             if("Storage" in dataName):
                 storage = listElement.text.replace("Storage:", "").strip()
                 dataCapsul["SYSTEM_REQUIREMENTS"]["STORAGE"] = storage
-                print("[+] COMPATIBLE PROESSOR ADDED: {}".format(storage))
+                print("[+] REQUIRED STORAGE CAPACITY ADDED: {}".format(storage))
 
         except Exception as E:
             print(E)
@@ -178,8 +194,26 @@ def extract_data(htmlBuffer, appLink):
 # WRITE THE FILLED TEMPLATE TO THE DB.JSON FILE
 #================================================================================================
 def write_data():
-    with open("DB.json", "a+", encoding='utf-8') as fp:
+    print("[i] WRITING DATA OF {} GAMES TO {}.JSON".format(len(OUTPUT_BUFFER), OUTPUT_FILE_NAME))
+    with open(OUTPUT_FILE_NAME +".json", "a+", encoding='utf-8') as fp:
         fp.write(str(json.dumps(OUTPUT_BUFFER, indent=4)))
 
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Crawl the Steam and pull data about games.")
+    parser.add_argument("-lc", default=10, type=int, help="Amount of links per iterations to request.")
+    parser.add_argument("-ic", default=1, type=int, help="How many iterations to run.")
+    parser.add_argument("-o", default="data", type=str, help="Output file name. (Without Extention)")
+    
+    args = parser.parse_args()
+    
+    if(len(sys.argv) < 2):
+        parser.print_help()
+        parser.print_usage()
+    else:
+        ITERATIONS = args.ic
+        COUNT = args.lc
+        OUTPUT_FILE_NAME = args.o
+        
+        pull_links()
 
-pull_links()
+    
