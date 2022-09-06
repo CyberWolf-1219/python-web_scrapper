@@ -6,8 +6,12 @@ import argparse
 
 # CONSTANTS =====================================================================================
 URL = "https://store.steampowered.com/search?query&start={}&count={}&sort_by=Released_DESC&force_infinite=1&category1=998&infinite=1"
+
 EXTRACTED_LINKS = []
 OUTPUT_BUFFER = {}
+CPUs = []
+GPUs = []
+
 ITERATIONS = None
 COUNT = None
 OUTPUT_FILE_NAME = None
@@ -163,6 +167,7 @@ def extract_data(htmlBuffer, appLink):
             if("Processor" in dataName):
                 processor = listElement.text.replace("Processor:", "").strip()
                 dataCapsul["SYSTEM_REQUIREMENTS"]["PROCESSORS"].append(processor)
+                CPUs.append(processor)
                 print("[+] COMPATIBLE PROESSOR ADDED: {}".format(processor))
 
             if("Memory" in dataName):
@@ -173,6 +178,7 @@ def extract_data(htmlBuffer, appLink):
             if("Graphics" in dataName):
                 graphics = listElement.text.replace("Graphics:", "").strip()
                 dataCapsul["SYSTEM_REQUIREMENTS"]["GRAPHICS"].append(graphics)
+                GPUs.append(graphics)
                 print("[+] COMPATIBLE GRAPHIC CARD ADDED: {}".format(graphics))
 
             if("Storage" in dataName):
@@ -197,6 +203,17 @@ def write_data():
     print("[i] WRITING DATA OF {} GAMES TO {}.JSON".format(len(OUTPUT_BUFFER), OUTPUT_FILE_NAME))
     with open(OUTPUT_FILE_NAME +".json", "a+", encoding='utf-8') as fp:
         fp.write(str(json.dumps(OUTPUT_BUFFER, indent=4)))
+        fp.close()
+
+    with open("./data/steam_cpu_names.txt", encoding="UTF-8", mode="a+") as f:
+        for cpu in CPUs:
+            f.write(cpu + "\n")
+        f.close()
+
+    with open("./data/steam_gpu_names.txt", encoding="UTF-8", mode="a+") as f:
+        for gpu in GPUs:
+            f.write(gpu + "\n")
+        f.close()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Crawl the Steam and pull data about games.")
