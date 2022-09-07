@@ -1,46 +1,61 @@
+from io import TextIOWrapper
 import json
 import pymongo
+from pymongo.collection import Collection
 
-CLIENT_CONNECTION = "mongodb://localhost:27017"
+def load_data_file(dataFile: TextIOWrapper) -> dict:
+    DATA_OBJ = json.load(dataFile)
+    print(f"SIZE: {len(DATA_OBJ)}")
+    return DATA_OBJ
 
-# CONNECT TO THE DATABASE
-CLIENT = pymongo.MongoClient(CLIENT_CONNECTION)
+def push_data(DATA: dict, COLLECTION: Collection):
+    for list in DATA:
+        if("Intel" in list):
+            MANUFACTURER = "INTEL"
+        elif("AMD" in list):
+            MANUFACTURER = "AMD"
+        tables = DATA[list]
+        for table in tables:
+            rows = tables[table]
+            for row in rows:
+                ROW = rows[row]
+                MODEL = ROW["MODEL"]
+                FREQUENCY = ROW["FREQUENCY"]
+                CORES = ROW["CORES"]
+                THREADS = ROW["THREADS"]
 
-# ASK FOR DATABASE TO INTERACT WITH
-print(CLIENT.list_database_names())
-selectedDatabase = int(input("ENTER DATA BASE INDEX: "))
+                print(f"{MANUFACTURER} {MODEL} {FREQUENCY} {CORES} {THREADS}")
+                COLLECTION.insert_one({"MANUFACTURER": MANUFACTURER, "MODEL": MODEL, "FREQUENCY": FREQUENCY, "CORES": CORES, "THREADS": THREADS})
 
-try:
-    DATABASE = CLIENT.get_database(CLIENT.list_database_names()[selectedDatabase])
-except Exception as E:
-    print(f"[-] CANNOT CONNECT TO THE DATABASE: {E}")
+def main():
+    HOST = "mongodb://localhost:27017"
+    try:
+        CLIENT = pymongo.MongoClient(HOST)
+    except Exception as E:
+        print(f"[-] DATABASE CONNECTION ERROR: {E}")
 
-# ASK FOR THE COLLECTION TO INTERACT WITH
-print(DATABASE.list_collection_names())
-selectedCollection = int(input("ENTER COLLECTION INDEX: "))
+    databaseNames = CLIENT.list_database_names()
+    for database in databaseNames:
+        print(f"{databaseNames.index(database)} => {database}")
+    
+    selection = int(input("SELECTE A DATABSE: "))
 
-try:
-    COLLECTION = DATABASE.get_collection(DATABASE.list_collection_names()[selectedCollection])
-except Exception as E:
-    print(f"[-] CANNOT GET THE COLLECTION: {E}")
+    DATABASE = CLIENT.get_database(databaseNames[selection])
 
-# ASK FOR THE FILE TO PULL THE DATA FROM
-dataFileName = input("ENTER DATA FILE (with extention): ")
+    collectionNames = DATABASE.list_collection_names()
+    for collectionName in collectionNames:
+        print(f"{collectionNames.index(collectionName)} => {collectionName}")
 
-dataFile = open(dataFileName, encoding="UTF-8", mode="r")
+    selection = int(input("SELECT A COLLECTOIN: "))
 
-# PULL THE DATA FROM THE FILE
-JSON_DATA = json.load(dataFile)
+    COLLECTION = DATABASE.get_collection(collectionNames[selection])
 
-# PUSH DATA TO THE COLLECTION
-def pushData(data):
-    COLLECTION.insert_one(data)
+    #dataFileName = input("ENTER THE DATA FILE NAME(WITH EXTENTION): ")
+    dataFileName = "./data/data.json"
+    dataFile = open(dataFileName, 'r', encoding='UTF-8')
 
-print(len(JSON_DATA.values()))
-print(len(JSON_DATA.keys()))
-input()
+    dataObj = load_data_file(dataFile)
+    push_data(dataObj, COLLECTION)
 
-for value in JSON_DATA.values():
-    print(value)
-    pushData(value)
-
+if __name__ == '__main__':
+    main()
