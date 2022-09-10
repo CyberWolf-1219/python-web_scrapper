@@ -1,11 +1,5 @@
-from array import array
-from doctest import FAIL_FAST
 import json
-import string
-from textwrap import indent
 import requests as R
-import argparse
-import sys
 import re
 from bs4 import BeautifulSoup as BS
 

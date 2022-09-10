@@ -16,12 +16,14 @@ ITERATIONS = None
 COUNT = None
 OUTPUT_FILE_NAME = None
 #TEMPLATE = {
+#   "DETAILS":{
 #    "NAME": None,
 #    "GENRES": [],
 #    "TAGS": [],
 #    "RELEASE_YEAR": None,
 #    "DEVELOPER": None,
 #    "STEAM_LINK": None,
+#    }
 #    "SYSTEM_REQUIREMENTS":{
 #        "PROCESSORS":[],
 #        "GRAPHIC_CARDS": [],
@@ -87,15 +89,17 @@ def crawl_links():
 #================================================================================================
 # EXTRACT THE DATA FROM THE APP PAGE AND FILL THE TEMPLATE
 #================================================================================================
-def extract_data(htmlBuffer, appLink):
+def extract_data(htmlBuffer: str, appLink: str):
     print("[i] EXTRACTING DATA...")
     dataCapsul = {
-        "NAME": None,
-        "GENRES": [],
-        "TAGS": [],
-        "RELEASE_YEAR": None,
-        "DEVELOPER": None,
-        "STEAM_LINK": None,
+        "DETAILS": {
+            "NAME": "",
+            "GENRES": [],
+            "TAGS": [],
+            "RELEASE_YEAR": None,
+            "DEVELOPER": "",
+            "STEAM_LINK": "",
+        },
         "SYSTEM_REQUIREMENTS":{
             "PROCESSORS":[],
             "GRAPHICS": [],
@@ -107,12 +111,12 @@ def extract_data(htmlBuffer, appLink):
     appPage = BS(htmlBuffer, 'lxml')
 
     #enter link to capsul ===============================================================
-    dataCapsul["STEAM_LINK"] = appLink
+    dataCapsul["DETAILS"]["STEAM_LINK"] = appLink
     print("[+] WEBPAGE LINK ADDED: {}".format(appLink))
 
     #extract name ========================================================================
     appName = appPage.find('div', id="appHubAppName").text
-    dataCapsul["NAME"] = appName
+    dataCapsul["DETAILS"]["NAME"] = appName
     print("[+] APP NAME ADDED: {}".format(appName))
 
     #extract genres + developer ==========================================================
@@ -123,12 +127,12 @@ def extract_data(htmlBuffer, appLink):
         href = link["href"]
 
         if("/genre/" in href):
-            genre = link.text
-            dataCapsul["GENRES"].append(genre)
+            genre = link.text.strip()
+            dataCapsul["DETAILS"]["GENRES"].append(genre)
             print("[+] NEW GENRE ADDED: {}".format(genre))
         elif("developer" in href):
-            dev = link.text
-            dataCapsul["DEVELOPER"] = dev
+            dev = link.text.strip()
+            dataCapsul["DETAILS"]["DEVELOPER"] = dev
             print("[+] APP DEVELOPER FOUND: {}".format(dev))
 
     #extract release year ===============================================================
@@ -138,7 +142,7 @@ def extract_data(htmlBuffer, appLink):
     else:
         date = dateElement.text.split(',')[-1].strip()
 
-    dataCapsul["RELEASE_YEAR"] = date
+    dataCapsul["DETAILS"]["RELEASE_YEAR"] = date
     print("[+] APP RELEASE DATE ADDED: {}".format(date))
 
     #extract tags =======================================================================
@@ -146,7 +150,7 @@ def extract_data(htmlBuffer, appLink):
     
     for tagElement in appTagElements:
         tag = tagElement.text.replace("\t", "").replace("\r", "").replace("\n", "")
-        dataCapsul["TAGS"].append(tag)
+        dataCapsul["DETAILS"]["TAGS"].append(tag)
         print("[+] NEW TAG ADDED: {}".format(tag))
 
     # SYSTEM REQ EXTRACTION =============================================================
@@ -162,7 +166,7 @@ def extract_data(htmlBuffer, appLink):
     
     for listElement in listElements:
         try:
-            dataName = listElement.find("strong").text
+            dataName = listElement.find("strong").text.strip()
 
             if("Processor" in dataName):
                 processor = listElement.text.replace("Processor:", "").strip()
@@ -229,7 +233,7 @@ if __name__ == "__main__":
     else:
         ITERATIONS = args.ic
         COUNT = args.lc
-        OUTPUT_FILE_NAME = args.o
+        OUTPUT_FILE_NAME = "./data/" + args.o
         
         pull_links()
 

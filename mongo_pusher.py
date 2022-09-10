@@ -8,7 +8,7 @@ def load_data_file(dataFile: TextIOWrapper) -> dict:
     print(f"SIZE: {len(DATA_OBJ)}")
     return DATA_OBJ
 
-def push_data(DATA: dict, COLLECTION: Collection):
+def push_data_cpu(DATA: dict, COLLECTION: Collection):
     for list in DATA:
         if("Intel" in list):
             MANUFACTURER = "INTEL"
@@ -25,7 +25,15 @@ def push_data(DATA: dict, COLLECTION: Collection):
                 THREADS = ROW["THREADS"]
 
                 print(f"{MANUFACTURER} {MODEL} {FREQUENCY} {CORES} {THREADS}")
-                COLLECTION.insert_one({"MANUFACTURER": MANUFACTURER, "MODEL": MODEL, "FREQUENCY": FREQUENCY, "CORES": CORES, "THREADS": THREADS})
+                COLLECTION.insert_one({"MANUFACTURER": MANUFACTURER, "MODEL": MODEL, "FREQUENCY": float(FREQUENCY), "CORES": int(CORES), "THREADS": int(THREADS)})
+
+def push_data_game(DATA: dict, COLLECTION: Collection):
+    for game in DATA:
+        print(f"INSERTING: {game} = {json.dumps(DATA[game], indent=4)}")
+        try:
+            COLLECTION.insert_one(DATA[game])
+        except Exception as E:
+            print(f"[-] ERROR ON INSERTING DATA: {E}")
 
 def main():
     HOST = "mongodb://localhost:27017"
@@ -50,12 +58,21 @@ def main():
 
     COLLECTION = DATABASE.get_collection(collectionNames[selection])
 
-    #dataFileName = input("ENTER THE DATA FILE NAME(WITH EXTENTION): ")
-    dataFileName = "./data/data.json"
-    dataFile = open(dataFileName, 'r', encoding='UTF-8')
-
+    dataFile = None
+    while(dataFile == None):
+        try:
+            dataFileName = input("ENTER THE DATA FILE NAME(WITH EXTENTION): ")
+            dataFile = open(dataFileName, 'r', encoding='UTF-8')
+        except Exception as E:
+            print(f"[-] ERROR: {E}")
+    
+    #dataFileName = "./data/data.json"
     dataObj = load_data_file(dataFile)
-    push_data(dataObj, COLLECTION)
+
+    if(COLLECTION.name == 'CPUs'):
+        push_data_cpu(dataObj, COLLECTION)
+    elif(COLLECTION.name == "GAMES"):
+        push_data_game(dataObj, COLLECTION)
 
 if __name__ == '__main__':
     main()
