@@ -25,8 +25,8 @@ OUTPUT_FILE_NAME = None
 #    "STEAM_LINK": None,
 #    }
 #    "SYSTEM_REQUIREMENTS":{
-#        "PROCESSORS":[],
-#        "GRAPHIC_CARDS": [],
+#        "PROCESSORS":None,
+#        "GRAPHIC_CARDS": None,
 #        "MEMORY": None,
 #        "STORAGE": None,
 #    }
@@ -101,8 +101,8 @@ def extract_data(htmlBuffer: str, appLink: str):
             "STEAM_LINK": "",
         },
         "SYSTEM_REQUIREMENTS":{
-            "PROCESSORS":[],
-            "GRAPHICS": [],
+            "PROCESSORS":None,
+            "GRAPHICS": None,
             "MEMORY": None,
             "STORAGE": None,
         }
@@ -160,9 +160,11 @@ def extract_data(htmlBuffer: str, appLink: str):
     if(sysReqElement == None):
         sysReqElement = appPage.find('div', class_="game_area_sys_req_full")
 
-
-
-    listElements = sysReqElement.find_all('li')
+    try:
+        listElements = sysReqElement.find_all('li')
+    except Exception as E:
+        print(f"[-] SKIPPING GAME DUE TO MISSING DATA: {dataCapsul['DETAILS']['NAME']}")
+        return
     
     for listElement in listElements:
         try:
@@ -170,7 +172,7 @@ def extract_data(htmlBuffer: str, appLink: str):
 
             if("Processor" in dataName):
                 processor = listElement.text.replace("Processor:", "").strip()
-                dataCapsul["SYSTEM_REQUIREMENTS"]["PROCESSORS"].append(processor)
+                dataCapsul["SYSTEM_REQUIREMENTS"]["PROCESSORS"] = processor
                 CPUs.append(processor)
                 print("[+] COMPATIBLE PROESSOR ADDED: {}".format(processor))
 
@@ -181,7 +183,7 @@ def extract_data(htmlBuffer: str, appLink: str):
 
             if("Graphics" in dataName):
                 graphics = listElement.text.replace("Graphics:", "").strip()
-                dataCapsul["SYSTEM_REQUIREMENTS"]["GRAPHICS"].append(graphics)
+                dataCapsul["SYSTEM_REQUIREMENTS"]["GRAPHICS"] = graphics
                 GPUs.append(graphics)
                 print("[+] COMPATIBLE GRAPHIC CARD ADDED: {}".format(graphics))
 
