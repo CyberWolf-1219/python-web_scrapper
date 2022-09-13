@@ -1,4 +1,6 @@
-
+*.html
 *.csv
 *.json
 *.txt
+web_drivers/geckodriver.exe
+geckodriver.log
