@@ -9,23 +9,9 @@ def load_data_file(dataFile: TextIOWrapper) -> dict:
     return DATA_OBJ
 
 def push_data_cpu(DATA: dict, COLLECTION: Collection):
-    for list in DATA:
-        if("Intel" in list):
-            MANUFACTURER = "INTEL"
-        elif("AMD" in list):
-            MANUFACTURER = "AMD"
-        tables = DATA[list]
-        for table in tables:
-            rows = tables[table]
-            for row in rows:
-                ROW = rows[row]
-                MODEL = ROW["MODEL"]
-                FREQUENCY = ROW["FREQUENCY"]
-                CORES = ROW["CORES"]
-                THREADS = ROW["THREADS"]
-
-                print(f"{MANUFACTURER} {MODEL} {FREQUENCY} {CORES} {THREADS}")
-                COLLECTION.insert_one({"MANUFACTURER": MANUFACTURER, "MODEL": MODEL, "FREQUENCY": float(FREQUENCY), "CORES": int(CORES), "THREADS": int(THREADS)})
+    for cpu in DATA.values():
+        print(json.dumps(cpu, indent=4))
+        COLLECTION.insert_one(cpu)
 
 def push_data_game(DATA: dict, COLLECTION: Collection):
     for game in DATA:
@@ -71,6 +57,8 @@ def main():
 
     if(COLLECTION.name == 'CPUs'):
         push_data_cpu(dataObj, COLLECTION)
+    elif(COLLECTION.name == "GPUs"):
+        pass
     elif(COLLECTION.name == "GAMES"):
         push_data_game(dataObj, COLLECTION)
 
