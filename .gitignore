@@ -4,3 +4,4 @@
 *.txt
 web_drivers/geckodriver.exe
 geckodriver.log
+*.pyc
