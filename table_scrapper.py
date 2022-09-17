@@ -82,8 +82,6 @@ def fill_virtula_table(virtualTable: dict, tableElement: Tag | NavigableString) 
     for i in range(0, len(tableRows)):
         carryList["Row " + str(i)] = {}
 
-    
-
     for currentRowIndex in range(len(tableRows)):
         tableRow = tableRows[currentRowIndex]
         vTableRow = virtualTable[currentRowIndex]
@@ -112,6 +110,8 @@ def fill_virtula_table(virtualTable: dict, tableElement: Tag | NavigableString) 
         for cellIndex in range(len(tableCells)):
             tableCell = tableCells[cellIndex]
             cellValue = tableCell.text.strip()
+            if((cellValue == " ") | (cellValue == "") | (cellValue == "n/a")):
+                cellValue = f"EMPTY_{currentRowIndex}_{cellIndex}"
 
             print("\n{:=<158}\n".format("VIRTUAL TABLE ROW "))
             print(json.dumps(vTableRow, indent=4))
@@ -142,6 +142,11 @@ def fill_virtula_table(virtualTable: dict, tableElement: Tag | NavigableString) 
             except Exception as E:
                 print(f"NO: {E}")
 
+            print("\n{:=<158}\n".format("SPANS "))
+            print(f"ROW SPAN: {cellRowSpan}")
+            print(f"COL SPAN: {cellColSpan}")
+            print('=' * 158)
+
             if(cellRowSpan > 1):
                 for rowIndexToCarry in range(currentRowIndex + 1, currentRowIndex + cellRowSpan):
                     rowToCarry = carryList["Row " + str(rowIndexToCarry)]
@@ -150,25 +155,39 @@ def fill_virtula_table(virtualTable: dict, tableElement: Tag | NavigableString) 
             for cellIndexToFill in range(firstEmptyVCell, firstEmptyVCell + cellColSpan):
                 vTableRow[cellIndexToFill] = cellValue
 
-        print("\n{:~^158}".format(" END OF ROW "))
+        print(Fore.WHITE + Back.RED + "\n{:~^158}".format(" END OF ROW "))
         # input("ON HOLD...")
 
     return virtualTable
 
-def print_virtual_table(virtualTable: dict):
+def print_virtual_table(virtualTable: dict, needToExport: bool = False):
     rows = virtualTable.keys()
+    if(needToExport):
+        fp = open("tables.txt", mode="a+", encoding="UTF-8")
 
-    for row in rows:
-        cells = virtualTable[row].values()
-        cellCount = len(cells)
+        for row in rows:
+            cells = virtualTable[row].values()
+            cellCount = len(cells)
 
-        rowTemplate = ""
-        for i in range(cellCount):
-            rowTemplate += "|{0[" + str(i) + "]:^20}|"
-            
-        print("-" * 20 * cellCount)
-        print(rowTemplate.format(list(cells)))
-        print("-" * 20 * cellCount)
+            rowTemplate = ""
+            for i in range(cellCount):
+                rowTemplate += "|{0[" + str(i) + "]:^20}|"
+
+            print("-" * 22 * cellCount, file=fp)
+            print(rowTemplate.format(list(cells)), file=fp)
+            print("-" * 22 * cellCount, file=fp)
+    else:
+        for row in rows:
+            cells = virtualTable[row].values()
+            cellCount = len(cells)
+
+            rowTemplate = ""
+            for i in range(cellCount):
+                rowTemplate += "|{0[" + str(i) + "]:^20}|"
+
+            print("-" * 22 * cellCount)
+            print(rowTemplate.format(list(cells)))
+            print("-" * 22 * cellCount)
 
 def main():
     url = ""
@@ -177,12 +196,22 @@ def main():
 
     page = get_page(url)
     tables = get_tables(page)
-    tableDimentions = get_table_dimentions(tables[0])
+    selection = input("SELECT TABLE INDEXES YOU WANT (0 = 1): ").split(" ")
+    if (selection):
+        for index in selection:
+            tableDimentions = get_table_dimentions(tables[int(index)])
+            vTable = create_virtual_table(tableDimentions[0], tableDimentions[1])
+            vTable = fill_virtula_table(vTable, tables[int(index)])
+            print(json.dumps(vTable, indent=4))
+            print_virtual_table(vTable)
+    else:
+        for table in tables:
+            tableDimentions = get_table_dimentions(table)
+            vTable = create_virtual_table(tableDimentions[0], tableDimentions[1])
+            vTable = fill_virtula_table(vTable, table)
+            print(json.dumps(vTable, indent=4))
+            print_virtual_table(vTable, True)
 
-    vTable = create_virtual_table(tableDimentions[0], tableDimentions[1])
-    vTable = fill_virtula_table(vTable, tables[0])
-    print(json.dumps(vTable, indent=4))
-    print_virtual_table(vTable)
     #export("table.txt", json.dumps(vTable, indent=4))
 
 if __name__ == '__main__':
