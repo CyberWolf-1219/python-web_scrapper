@@ -11,6 +11,7 @@ colorama.init(autoreset=True)
 import traceback
 #==========================================================================
 HEADER = {"user-agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36"}
+output_obj = {}
 #==========================================================================
 def cprint(sign:str = "", text:str = "",):
     buffer = "[" + sign + "] " + text
@@ -183,11 +184,11 @@ def print_virtual_table(virtualTable: dict, needToExport: bool = False):
 
             rowTemplate = ""
             for i in range(cellCount):
-                rowTemplate += "|{0[" + str(i) + "]:^20}|"
+                rowTemplate += "|{0[" + str(i) + "]:^30}|"
 
-            print("-" * 22 * cellCount)
+            print("-" * 32 * cellCount)
             print(rowTemplate.format(list(cells)))
-            print("-" * 22 * cellCount)
+            print("-" * 32 * cellCount)
 
 def main():
     url = ""
@@ -197,22 +198,25 @@ def main():
     page = get_page(url)
     tables = get_tables(page)
     selection = input("SELECT TABLE INDEXES YOU WANT (0 = 1): ").split(" ")
-    if (selection):
+    if (len(selection) > 0):
         for index in selection:
             tableDimentions = get_table_dimentions(tables[int(index)])
             vTable = create_virtual_table(tableDimentions[0], tableDimentions[1])
             vTable = fill_virtula_table(vTable, tables[int(index)])
-            print(json.dumps(vTable, indent=4))
+            # print(json.dumps(vTable, indent=4))
             print_virtual_table(vTable)
+            output_obj[index] = vTable
     else:
         for table in tables:
             tableDimentions = get_table_dimentions(table)
             vTable = create_virtual_table(tableDimentions[0], tableDimentions[1])
             vTable = fill_virtula_table(vTable, table)
-            print(json.dumps(vTable, indent=4))
+            # print(json.dumps(vTable, indent=4))
             print_virtual_table(vTable, True)
+            output_obj[tables.index(table)] = vTable
 
-    #export("table.txt", json.dumps(vTable, indent=4))
+    fileName = input("ENTER OUTPUT FILE NAME: ")
+    export(fileName + ".json", json.dumps(output_obj, indent=4))
 
 if __name__ == '__main__':
     main()
