@@ -114,6 +114,10 @@ def crawl_table(tableElement: Tag | NavigableString, tableIndex: int):
             ROW_DATA["FAMILY"] = productName.split(" ")[0]
             ROW_DATA["MODEL"] = productName
 
+            with open("cpu_models.txt", encoding="UTF-8", mode="a+") as fp:
+                fp.write(productName + '\n')
+                fp.close()
+
             cprint(f"CLOCK SPEED => {clockSpeed}")
             ROW_DATA["BASE CLOCK"] = clockSpeed
 
