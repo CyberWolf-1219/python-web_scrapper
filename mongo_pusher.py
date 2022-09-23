@@ -8,11 +8,6 @@ def load_data_file(dataFile: TextIOWrapper) -> dict:
     print(f"SIZE: {len(DATA_OBJ)}")
     return DATA_OBJ
 
-def push_data_cpu(DATA: dict, COLLECTION: Collection):
-    for cpu in DATA.values():
-        print(json.dumps(cpu, indent=4))
-        COLLECTION.insert_one(cpu)
-
 def print_table(table: dict) -> bool:
     if (table == None):
         return False
@@ -42,6 +37,20 @@ def print_table(table: dict) -> bool:
     except Exception as E:
         print(f"TABLE PRINTING ERROR: {E}")
 
+def check_data_presence(dbCollection: Collection, data: dict) -> bool:
+    result = dbCollection.find(data)
+    if(result):
+        return True
+    else:
+        return False
+
+def push_data_cpu(DATA: dict, COLLECTION: Collection):
+    for cpu in DATA.values():
+        print(json.dumps(cpu, indent=4))
+        isDataInDB = check_data_presence(COLLECTION, {"MODEL": cpu["MODEL"]})
+        if(not isDataInDB):
+            COLLECTION.insert_one(cpu)
+
 def push_data_gpu(DATA: dict, COLLECTION: Collection):
     for table in DATA.values():
         if(not print_table(table)):
@@ -54,15 +63,16 @@ def push_data_gpu(DATA: dict, COLLECTION: Collection):
                 "NAME": row[str(nameColumnIndex)],
                 "MEMORY": row[str(memoryColumnIndex)]
             }
-            COLLECTION.insert_one(obj)
+            isDataInDB = check_data_presence(COLLECTION, {"NAME": obj["NAME"]})
+            if(not isDataInDB):
+                COLLECTION.insert_one(obj)
 
 def push_data_game(DATA: dict, COLLECTION: Collection):
-    for game in DATA:
+    for game in DATA.keys():
         print(f"INSERTING: {game} = {json.dumps(DATA[game], indent=4)}")
-        try:
+        isDataInDB = check_data_presence(COLLECTION, {"DETAILS.NAME": game})
+        if(not isDataInDB):
             COLLECTION.insert_one(DATA[game])
-        except Exception as E:
-            print(f"[-] ERROR ON INSERTING DATA: {E}")
 
 def main():
     HOST = "mongodb://localhost:27017"
