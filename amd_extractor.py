@@ -50,8 +50,9 @@ def start():
             #input()
 
     print(json.dumps(OUTPUT_OBJ, indent=4))
-    input()
-    write_to_file(os.getcwd() + "/AMD_CPUS.json", json.dumps(OUTPUT_OBJ, indent=4))
+    input("PAUSED...")
+    # write_to_file(os.getcwd() + "/AMD_CPUS.json", json.dumps(OUTPUT_OBJ, indent=4))
+    write_to_file(".data/amd_cpus.json", json.dumps(OUTPUT_OBJ, indent=4))
 
 def write_to_file(fileName: str, content: str):
     print(f"[i] WRITING RESPONSE BUFFER TO A FILE...")
