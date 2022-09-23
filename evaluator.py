@@ -2,6 +2,9 @@ import re
 import json
 import pymongo
 from pymongo.collection import Collection
+import colorama
+from colorama import Fore, Back
+colorama.init(autoreset=True)
 
 # CPU PATTERNS ==================================================================================================
 INTEL_PATTERNS = {
@@ -24,11 +27,11 @@ AMD_PATTERNS = {
 # GPU PATTERNS =====================================================================================================
 NVIDIA_GRAPHIC_PATTERNS = {
     # GTX
-    "GTX_PATTERN" : re.compile(r"\bgtx\s\d{3,4} ?\w?", re.IGNORECASE),
+    "GTX_PATTERN" : re.compile(r"\bgtx\s?\d{3,4} ?Ti?Se?", re.IGNORECASE),
     # GT
-    "GT_PATTERN" : re.compile(r"\bgt\s\d{3,4}", re.IGNORECASE),
+    "GT_PATTERN" : re.compile(r"\bgt\s?\d{3,4}", re.IGNORECASE),
     # RTX
-    "RTX_PATTERN": re.compile(r"\brtx\s\d{3,4}\w?", re.IGNORECASE)
+    "RTX_PATTERN": re.compile(r"\brtx\s?\d{3,4}\w?", re.IGNORECASE)
 }
 
 AMD_GRAPHIC_PATTERNS = {
@@ -44,6 +47,16 @@ AMD_GRAPHIC_PATTERNS = {
 # SYSTEM MEMORY PATTERN ============================================================================================
 MEMORY_PATTERN = re.compile(r"\d{1,4} *[GM][B]", re.IGNORECASE)
 # ==================================================================================================================
+
+def write_to_file(fileName: str, content: str):
+    print(f"[i] WRITING RESPONSE BUFFER TO A FILE...")
+    try:
+        with open(fileName, mode="a+", encoding="UTF-8") as fp:
+            fp.write(content)
+            fp.close()
+        print(Fore.WHITE + Back.GREEN + f"[+] WRITE COMPLETE: {fileName}")
+    except Exception as E:
+        print(Fore.WHITE + Back.RED + f"[-] ERROR WRITING DATA TO FILE: {E}")
 
 def load_json_file(fileName: str) -> dict:
     try:
@@ -61,6 +74,7 @@ def export_to_json(fileName: str, obj: dict):
             fp.close()
         
         print(f"EXPORTING COMPLETE: {fileName}")
+        print(f"EXPORTED ITEM COUNT: {len(obj)}")
     except Exception as E:
         print(f"EXPOTING ERROR: {E}")
 
@@ -149,7 +163,7 @@ def check_cpu(cpuString: str) -> list:
 
     try:
         print(f"CPU STRING: {cpuString}")
-        cpuString = re.sub(r"(\(R\)|\s{2,}|@|\+|-|™|®|,)", " ", cpuString, re.IGNORECASE)
+        cpuString = re.sub(r"(\(R\)|\s{2,}|@|\+|-|™|®|,|\d\.?\d{,2}[gm]hz)", " ", cpuString, re.IGNORECASE)
         print(f"CPU STRING: {cpuString}")
         matchingPhrases = []
 
@@ -177,6 +191,8 @@ def check_cpu(cpuString: str) -> list:
             matched = evaluate_data("cpu", item)
             if(matched != None):
                 evalueatedCPUList.append(matched)
+            else:
+                write_to_file("unmatched_cpus.txt", str(item) + "\n")
 
         print('=' * 158)
         return evalueatedCPUList
@@ -215,7 +231,9 @@ def check_gpu(gpuString: str) -> list:
             matched = evaluate_data("gpu", item)
             if(matched != None):
                 evalueatedGPUList.append(matched)
-
+            else:
+                write_to_file("unmatched_gpus.txt", str(item) + "\n")
+                
         print('=' * 158)
         return evalueatedGPUList
     except Exception as E:
@@ -286,8 +304,8 @@ def walk_game_obj(gamesObj: dict) -> dict:
     return outPutGames
 
 def main():
-    # fileName = input("FILE NAME: ")
-    fileName = "./data/games.json"
+    fileName = input("FILE NAME: ")
+    #fileName = "./data/games.json"
     gamesObj = load_json_file(fileName)
 
     HOST = "mongodb://localhost:27017"
