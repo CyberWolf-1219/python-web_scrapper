@@ -7,8 +7,6 @@
 
 # IMPORTS ==============================================
 import re
-from statistics import mode
-from turtle import heading
 import requests as r
 from bs4 import BeautifulSoup as bs
 from bs4.element import Tag, NavigableString
@@ -114,7 +112,7 @@ def crawl_table(tableElement: Tag | NavigableString, tableIndex: int):
             ROW_DATA["FAMILY"] = productName.split(" ")[0]
             ROW_DATA["MODEL"] = productName
 
-            with open("cpu_models.txt", encoding="UTF-8", mode="a+") as fp:
+            with open("./data/cpu_models.txt", encoding="UTF-8", mode="a+") as fp:
                 fp.write(productName + '\n')
                 fp.close()
 
@@ -175,7 +173,7 @@ def main():
         except Exception as E:
             cprint('-', "ERROR CRAWLING PAGE: {}".format(E))
 
-    export("intel_cpus.json", json.dumps(OUTPUT_OBJ, indent=4))
+    export("./data/intel_cpus.json", json.dumps(OUTPUT_OBJ, indent=4))
     print(json.dumps(OUTPUT_OBJ, indent=4))
 
 if __name__ == '__main__':
