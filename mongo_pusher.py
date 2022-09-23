@@ -13,24 +13,39 @@ def push_data_cpu(DATA: dict, COLLECTION: Collection):
         print(json.dumps(cpu, indent=4))
         COLLECTION.insert_one(cpu)
 
-def print_table(table: dict):
-    rows = table.keys()
-    for row in rows:
-        cells = table[row].values()
-        cellCount = len(cells)
+def print_table(table: dict) -> bool:
+    if (table == None):
+        return False
+    try:
+        rows = list(table.keys())
+        headingRow_1 = list(table[rows[0]].values())
+        headingRow_2 = list(table[rows[1]].values())
+        for i in range(len(headingRow_1)):
+            print(f"{i} => {headingRow_1[i]}")
+        
+        for i in range(len(headingRow_2)):
+            print(f"{i} => {headingRow_2[i]}")
 
-        rowTemplate = ""
-        for i in range(cellCount):
-            rowTemplate += "|{0[" + str(i) + "]:^30}|"
+        for row in rows:
+            cells = list(table[row].values())
+            cellCount = len(cells)
 
-        print("-" * 32 * cellCount)
-        print(rowTemplate.format(list(cells)))
-        print("-" * 32 * cellCount)
+            rowTemplate = ""
+            for i in range(cellCount):
+                rowTemplate += "|{0[" + str(i) + "]:^30}|"
 
+            print("-" * 32 * cellCount)
+            print(rowTemplate.format(cells))
+            print("-" * 32 * cellCount)
+
+        return True
+    except Exception as E:
+        print(f"TABLE PRINTING ERROR: {E}")
 
 def push_data_gpu(DATA: dict, COLLECTION: Collection):
     for table in DATA.values():
-        print_table(table)
+        if(not print_table(table)):
+            continue
         nameColumnIndex = int(input("ENTER THE NAME COLUMN INDEX: "))
         memoryColumnIndex = int(input("ENTER THE MEMORY COLUMN INDEX: "))
         for row in table.values():
