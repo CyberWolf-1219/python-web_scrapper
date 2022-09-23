@@ -13,10 +13,6 @@ OUTPUT_FILE_NAME = "./data/cpus.json"
 
 PROCESSORS_OBJ = {}
 #=================================================================================================
-PROCESSOR_CSV = csv.reader(open("./cpudb/processor.csv", encoding="utf-8", mode="r"))
-FAMILY_CSV = csv.reader(open("./cpudb/processor_familie.csv", encoding="utf-8", mode="r"))
-ARCHITECTURE_CSV = csv.reader(open("./cpudb/microarchitecture.csv", encoding="utf-8", mode="r"))
-#=================================================================================================
 MANUFACTURERE = {
     1: "AMD",
     9: "INTEL"
