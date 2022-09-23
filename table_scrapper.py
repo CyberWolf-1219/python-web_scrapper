@@ -78,145 +78,154 @@ def create_virtual_table(rows: int, columns: int) -> dict:
     return virtualTable
 
 def fill_virtula_table(virtualTable: dict, tableElement: Tag | NavigableString) -> dict:
-    tableRows = get_table_rows(tableElement)
-    carryList = {}
-    for i in range(0, len(tableRows)):
-        carryList["Row " + str(i)] = {}
+    try:
+        tableRows = get_table_rows(tableElement)
+        carryList = {}
+        for i in range(0, len(tableRows)):
+            carryList["Row " + str(i)] = {}
 
-    for currentRowIndex in range(len(tableRows)):
-        tableRow = tableRows[currentRowIndex]
-        vTableRow = virtualTable[currentRowIndex]
-        tableCells = get_row_cells(tableRow)
+        for currentRowIndex in range(len(tableRows)):
+            tableRow = tableRows[currentRowIndex]
+            vTableRow = virtualTable[currentRowIndex]
+            tableCells = get_row_cells(tableRow)
 
-        print("\n{:=<158}\n".format("CARRY LIST "))
-        print(json.dumps(carryList, indent=4))
-        print("=" * 158)
-
-        print("\n{:=<158}\n".format("TABLE ROW "))
-        print(bs.prettify(tableRow))
-        print("=" * 158)
-
-        carried = carryList["Row " + str(currentRowIndex)]
-        print("\n{:=<158}\n".format("CARRIED ITEMS "))
-        print(json.dumps(carried, indent=4))
-        print("=" * 158)
-
-        if(len(carried) > 0):
-            for value, carryDirections in carried.items():
-                startCell, colSpan = carryDirections
-
-                for cellIndex in range(startCell, startCell + colSpan):
-                    vTableRow[cellIndex] = value
-        
-        for cellIndex in range(len(tableCells)):
-            tableCell = tableCells[cellIndex]
-            cellValue = tableCell.text.strip()
-            if((cellValue == " ") | (cellValue == "") | (cellValue == "n/a")):
-                cellValue = f"EMPTY_{currentRowIndex}_{cellIndex}"
-
-            print("\n{:=<158}\n".format("VIRTUAL TABLE ROW "))
-            print(json.dumps(vTableRow, indent=4))
+            print("\n{:=<158}\n".format("CARRY LIST "))
+            print(json.dumps(carryList, indent=4))
             print("=" * 158)
 
-            print("\n{:=<158}\n".format("CURRENT CELL "))
-            print(tableCell)
+            print("\n{:=<158}\n".format("TABLE ROW "))
+            print(bs.prettify(tableRow))
             print("=" * 158)
 
-            for vCellIndex, vCellValue in vTableRow.items():
-                if(vCellValue == "N/A"):
-                    firstEmptyVCell = vCellIndex
-                    break
+            carried = carryList["Row " + str(currentRowIndex)]
+            print("\n{:=<158}\n".format("CARRIED ITEMS "))
+            print(json.dumps(carried, indent=4))
+            print("=" * 158)
+
+            if(len(carried) > 0):
+                for value, carryDirections in carried.items():
+                    startCell, colSpan = carryDirections
+
+                    for cellIndex in range(startCell, startCell + colSpan):
+                        vTableRow[cellIndex] = value
             
-            print("\n{:=<158}\n".format("FIRST VIRTUAL EMPTY CELL "))
-            print(firstEmptyVCell)
-            print('=' * 158)
+            for cellIndex in range(len(tableCells)):
+                tableCell = tableCells[cellIndex]
+                cellValue = tableCell.text.strip()
+                if((cellValue == " ") | (cellValue == "") | (cellValue == "n/a")):
+                    cellValue = f"EMPTY_{currentRowIndex}_{cellIndex}"
 
-            cellRowSpan = 1
-            cellColSpan = 1
-            try:
-                cellRowSpan = int(tableCell['rowspan'])
-            except Exception as E:
-                print(f"NO: {E}")
+                print("\n{:=<158}\n".format("VIRTUAL TABLE ROW "))
+                print(json.dumps(vTableRow, indent=4))
+                print("=" * 158)
 
-            try:
-                cellColSpan = int(tableCell['colspan'])
-            except Exception as E:
-                print(f"NO: {E}")
+                print("\n{:=<158}\n".format("CURRENT CELL "))
+                print(tableCell)
+                print("=" * 158)
 
-            print("\n{:=<158}\n".format("SPANS "))
-            print(f"ROW SPAN: {cellRowSpan}")
-            print(f"COL SPAN: {cellColSpan}")
-            print('=' * 158)
+                for vCellIndex, vCellValue in vTableRow.items():
+                    if(vCellValue == "N/A"):
+                        firstEmptyVCell = vCellIndex
+                        break
+                
+                print("\n{:=<158}\n".format("FIRST VIRTUAL EMPTY CELL "))
+                print(firstEmptyVCell)
+                print('=' * 158)
 
-            if(cellRowSpan > 1):
-                for rowIndexToCarry in range(currentRowIndex + 1, currentRowIndex + cellRowSpan):
-                    rowToCarry = carryList["Row " + str(rowIndexToCarry)]
-                    rowToCarry[cellValue] = [firstEmptyVCell, cellColSpan]
+                cellRowSpan = 1
+                cellColSpan = 1
+                try:
+                    cellRowSpan = int(tableCell['rowspan'])
+                except Exception as E:
+                    print(f"NO: {E}")
 
-            for cellIndexToFill in range(firstEmptyVCell, firstEmptyVCell + cellColSpan):
-                vTableRow[cellIndexToFill] = cellValue
+                try:
+                    cellColSpan = int(tableCell['colspan'])
+                except Exception as E:
+                    print(f"NO: {E}")
 
-        print(Fore.WHITE + Back.RED + "\n{:~^158}".format(" END OF ROW "))
-        # input("ON HOLD...")
+                print("\n{:=<158}\n".format("SPANS "))
+                print(f"ROW SPAN: {cellRowSpan}")
+                print(f"COL SPAN: {cellColSpan}")
+                print('=' * 158)
 
-    return virtualTable
+                if(cellRowSpan > 1):
+                    for rowIndexToCarry in range(currentRowIndex + 1, currentRowIndex + cellRowSpan):
+                        rowToCarry = carryList["Row " + str(rowIndexToCarry)]
+                        rowToCarry[cellValue] = [firstEmptyVCell, cellColSpan]
+
+                for cellIndexToFill in range(firstEmptyVCell, firstEmptyVCell + cellColSpan):
+                    vTableRow[cellIndexToFill] = cellValue
+
+            print(Fore.WHITE + Back.RED + "\n{:~^158}".format(" END OF ROW "))
+            # input("ON HOLD...")
+
+        return virtualTable
+    except Exception as E:
+        cprint('-', f"VIRTUAL TABLE POPULATION ERROR: {E}")
 
 def print_virtual_table(virtualTable: dict, needToExport: bool = False):
-    rows = virtualTable.keys()
-    if(needToExport):
-        fp = open("tables.txt", mode="a+", encoding="UTF-8")
+    try:
+        rows = virtualTable.keys()
+        if(needToExport):
+            fp = open("tables.txt", mode="a+", encoding="UTF-8")
 
-        for row in rows:
-            cells = virtualTable[row].values()
-            cellCount = len(cells)
+            for row in rows:
+                cells = virtualTable[row].values()
+                cellCount = len(cells)
 
-            rowTemplate = ""
-            for i in range(cellCount):
-                rowTemplate += "|{0[" + str(i) + "]:^20}|"
+                rowTemplate = ""
+                for i in range(cellCount):
+                    rowTemplate += "|{0[" + str(i) + "]:^20}|"
 
-            print("-" * 22 * cellCount, file=fp)
-            print(rowTemplate.format(list(cells)), file=fp)
-            print("-" * 22 * cellCount, file=fp)
-    else:
-        for row in rows:
-            cells = virtualTable[row].values()
-            cellCount = len(cells)
+                print("-" * 22 * cellCount, file=fp)
+                print(rowTemplate.format(list(cells)), file=fp)
+                print("-" * 22 * cellCount, file=fp)
+        else:
+            for row in rows:
+                cells = virtualTable[row].values()
+                cellCount = len(cells)
 
-            rowTemplate = ""
-            for i in range(cellCount):
-                rowTemplate += "|{0[" + str(i) + "]:^30}|"
+                rowTemplate = ""
+                for i in range(cellCount):
+                    rowTemplate += "|{0[" + str(i) + "]:^30}|"
 
-            print("-" * 32 * cellCount)
-            print(rowTemplate.format(list(cells)))
-            print("-" * 32 * cellCount)
+                print("-" * 32 * cellCount)
+                print(rowTemplate.format(list(cells)))
+                print("-" * 32 * cellCount)
+    except Exception as E:
+        cprint('-', f"VIRTUAL TABLE PRINTING ERROR: {E}")
 
 def main():
     url = ""
     while ("http" not in url):
         url = input("ENTER URL TO THE PAGE: ")
+    
+    try:
+        page = get_page(url)
+        tables = get_tables(page)
+        selection = input("SELECT TABLE INDEXES YOU WANT (0 = 1): ").split(" ")
+        if (len(selection) > 0):
+            for index in selection:
+                tableDimentions = get_table_dimentions(tables[int(index)])
+                vTable = create_virtual_table(tableDimentions[0], tableDimentions[1])
+                vTable = fill_virtula_table(vTable, tables[int(index)])
+                # print(json.dumps(vTable, indent=4))
+                print_virtual_table(vTable)
+                output_obj[index] = vTable
+        else:
+            for table in tables:
+                tableDimentions = get_table_dimentions(table)
+                vTable = create_virtual_table(tableDimentions[0], tableDimentions[1])
+                vTable = fill_virtula_table(vTable, table)
+                # print(json.dumps(vTable, indent=4))
+                print_virtual_table(vTable, True)
+                output_obj[tables.index(table)] = vTable
 
-    page = get_page(url)
-    tables = get_tables(page)
-    selection = input("SELECT TABLE INDEXES YOU WANT (0 = 1): ").split(" ")
-    if (len(selection) > 0):
-        for index in selection:
-            tableDimentions = get_table_dimentions(tables[int(index)])
-            vTable = create_virtual_table(tableDimentions[0], tableDimentions[1])
-            vTable = fill_virtula_table(vTable, tables[int(index)])
-            # print(json.dumps(vTable, indent=4))
-            print_virtual_table(vTable)
-            output_obj[index] = vTable
-    else:
-        for table in tables:
-            tableDimentions = get_table_dimentions(table)
-            vTable = create_virtual_table(tableDimentions[0], tableDimentions[1])
-            vTable = fill_virtula_table(vTable, table)
-            # print(json.dumps(vTable, indent=4))
-            print_virtual_table(vTable, True)
-            output_obj[tables.index(table)] = vTable
-
-    fileName = input("ENTER OUTPUT FILE NAME: ")
-    export(fileName + ".json", json.dumps(output_obj, indent=4))
+        fileName = input("ENTER OUTPUT FILE NAME: ")
+        export(fileName + ".json", json.dumps(output_obj, indent=4))
+    except Exception as E:
+        cprint('-', f"MAIN ERROR: {E}")
 
 if __name__ == '__main__':
     main()
