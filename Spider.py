@@ -1,12 +1,16 @@
 import sys
+from turtle import colormode
 from bs4 import BeautifulSoup as BS
 import requests as R
 import json
 import argparse
+import colorama
+from colorama import Fore, Back
+colorama.init(autoreset=True)
 
 # CONSTANTS =====================================================================================
 URL = "https://store.steampowered.com/search?query&start={}&count={}&sort_by=Released_DESC&force_infinite=1&category1=998&infinite=1"
-
+HEADER = {"user-agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36"}
 EXTRACTED_LINKS = []
 OUTPUT_BUFFER = {}
 CPUs = []
@@ -32,7 +36,19 @@ OUTPUT_FILE_NAME = None
 #    }
 #}
 #================================================================================================
+# PRINT FUNCTION =======================================
+def cprint(sign:str = "", text:str = "",):
+    buffer = "[" + sign + "] " + text
 
+    if(sign == "+"):
+        print(Fore.WHITE + Back.GREEN + buffer)
+    elif(sign == "-"):
+        print(Fore.WHITE + Back.RED + buffer)
+    elif(sign == "i"):
+        print(Fore.WHITE + Back.BLUE + buffer)
+    else:
+        print(Fore.WHITE + buffer)
+# ======================================================
 #================================================================================================
 # REQUEST A LINK LIST FROM STEAM
 #================================================================================================
@@ -43,7 +59,7 @@ def pull_links():
         try:
             print("[*] SENDING REQUEST TO STEAM...")
             print("[i] REQUEST: {}".format(URL.format(request_start, COUNT)))
-            steamResponse = R.get(URL.format(request_start, COUNT))
+            steamResponse = R.get(URL.format(request_start, COUNT), headers=HEADER, timeout=30)
             print("[+] RESPONSE RECIEVED...")
 
             steamResponse.encoding = 'UTF-8'
@@ -51,7 +67,7 @@ def pull_links():
 
             request_start += COUNT
         except Exception as E:
-            print(E)
+            cprint('-', "LINK REQUESTING ERROR: {}".format(E))
 
     crawl_links()
 
@@ -79,7 +95,7 @@ def crawl_links():
 
     for link in EXTRACTED_LINKS:
         print("[i] CURRENT LINK: {}".format(link))
-        appPageResponse = R.get(link)
+        appPageResponse = R.get(link, headers=HEADER, timeout=30)
         appPageResponse.encoding = 'UTF-8'
 
         extract_data(appPageResponse.text, link)
@@ -115,43 +131,56 @@ def extract_data(htmlBuffer: str, appLink: str):
     print("[+] WEBPAGE LINK ADDED: {}".format(appLink))
 
     #extract name ========================================================================
-    appName = appPage.find('div', id="appHubAppName").text
-    dataCapsul["DETAILS"]["NAME"] = appName
-    print("[+] APP NAME ADDED: {}".format(appName))
+    try:
+        appName = appPage.find('div', id="appHubAppName").text
+        dataCapsul["DETAILS"]["NAME"] = appName
+        print("[+] APP NAME ADDED: {}".format(appName))
+    except Exception as E:
+        cprint('-', f"APP NAME SEARCH ERROR: {E}")
 
     #extract genres + developer ==========================================================
-    detailsElement = appPage.find('div', id="genresAndManufacturer")
-    linksInElement = detailsElement.find_all('a')
     
-    for link in linksInElement:
-        href = link["href"]
+    try:
+        detailsElement = appPage.find('div', id="genresAndManufacturer")
+        linksInElement = detailsElement.find_all('a')
+        
+        for link in linksInElement:
+            href = link["href"]
 
-        if("/genre/" in href):
-            genre = link.text.strip()
-            dataCapsul["DETAILS"]["GENRES"].append(genre)
-            print("[+] NEW GENRE ADDED: {}".format(genre))
-        elif("developer" in href):
-            dev = link.text.strip()
-            dataCapsul["DETAILS"]["DEVELOPER"] = dev
-            print("[+] APP DEVELOPER FOUND: {}".format(dev))
+            if("/genre/" in href):
+                genre = link.text.strip()
+                dataCapsul["DETAILS"]["GENRES"].append(genre)
+                print("[+] NEW GENRE ADDED: {}".format(genre))
+            elif("developer" in href):
+                dev = link.text.strip()
+                dataCapsul["DETAILS"]["DEVELOPER"] = dev
+                print("[+] APP DEVELOPER FOUND: {}".format(dev))
+    except Exception as E:
+        cprint('-', f"GENRE & DEVELOPER EXTRACTION ERROR: {E}")
 
     #extract release year ===============================================================
-    dateElement = appPage.find('div', class_='date')
-    if(dateElement == None):
-        date = 0000
-    else:
-        date = dateElement.text.split(',')[-1].strip()
+    try:
+        dateElement = appPage.find('div', class_='date')
+        if(dateElement == None):
+            date = 0000
+        else:
+            date = dateElement.text.split(',')[-1].strip()
 
-    dataCapsul["DETAILS"]["RELEASE_YEAR"] = date
-    print("[+] APP RELEASE DATE ADDED: {}".format(date))
+        dataCapsul["DETAILS"]["RELEASE_YEAR"] = date
+        print("[+] APP RELEASE DATE ADDED: {}".format(date))
+    except Exception as E:
+        cprint('-', f"RELEASE YEAR EXTRACTION ERROR: {E}")
 
     #extract tags =======================================================================
-    appTagElements = appPage.find_all('a', class_="app_tag")
-    
-    for tagElement in appTagElements:
-        tag = tagElement.text.replace("\t", "").replace("\r", "").replace("\n", "")
-        dataCapsul["DETAILS"]["TAGS"].append(tag)
-        print("[+] NEW TAG ADDED: {}".format(tag))
+    try:
+        appTagElements = appPage.find_all('a', class_="app_tag")
+        
+        for tagElement in appTagElements:
+            tag = tagElement.text.replace("\t", "").replace("\r", "").replace("\n", "")
+            dataCapsul["DETAILS"]["TAGS"].append(tag)
+            print("[+] NEW TAG ADDED: {}".format(tag))
+    except Exception as E:
+        cprint('-', f"TAG EXTRACTION ERROR: {E}")
 
     # SYSTEM REQ EXTRACTION =============================================================
     print('=' * 100)
@@ -163,7 +192,7 @@ def extract_data(htmlBuffer: str, appLink: str):
     try:
         listElements = sysReqElement.find_all('li')
     except Exception as E:
-        print(f"[-] SKIPPING GAME DUE TO MISSING DATA: {dataCapsul['DETAILS']['NAME']}")
+        cprint('-', f"SKIPPING GAME DUE TO MISSING DATA: {dataCapsul['DETAILS']['NAME']}")
         return
     
     for listElement in listElements:
@@ -193,7 +222,7 @@ def extract_data(htmlBuffer: str, appLink: str):
                 print("[+] REQUIRED STORAGE CAPACITY ADDED: {}".format(storage))
 
         except Exception as E:
-            print(E)
+            cprint('-' f"SYSTEM REQUIREMENT EXTRACITON ERROR: {E}")
 
     print("="*100)
     print(json.dumps(dataCapsul, indent=4))
