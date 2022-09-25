@@ -39,7 +39,8 @@ def print_table(table: dict) -> bool:
 
 def check_data_presence(dbCollection: Collection, data: dict) -> bool:
     result = dbCollection.find(data)
-    if(result):
+    resultLength = len(list(result.clone()))
+    if(resultLength > 0):
         return True
     else:
         return False
