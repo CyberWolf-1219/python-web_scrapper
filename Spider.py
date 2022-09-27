@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import sys
 from turtle import colormode
 from bs4 import BeautifulSoup as BS
@@ -115,6 +116,7 @@ def extract_data(htmlBuffer: str, appLink: str):
             "RELEASE_YEAR": None,
             "DEVELOPER": "",
             "STEAM_LINK": "",
+            "IMG": "",
         },
         "SYSTEM_REQUIREMENTS":{
             "PROCESSORS":None,
@@ -130,6 +132,15 @@ def extract_data(htmlBuffer: str, appLink: str):
     dataCapsul["DETAILS"]["STEAM_LINK"] = appLink
     print("[+] WEBPAGE LINK ADDED: {}".format(appLink))
 
+    # extract link to image ==============================================================
+    try:
+        coverImageLink = appPage.find("img", class_="game_header_image_full")["src"]
+        print(coverImageLink)
+        dataCapsul["DETAILS"]["IMG"] = coverImageLink
+
+    except Exception as E:
+        cprint('-', f"CANNOT FIND COVER IMAGE: {E}")
+
     #extract name ========================================================================
     try:
         appName = appPage.find('div', id="appHubAppName").text
@@ -139,7 +150,6 @@ def extract_data(htmlBuffer: str, appLink: str):
         cprint('-', f"APP NAME SEARCH ERROR: {E}")
 
     #extract genres + developer ==========================================================
-    
     try:
         detailsElement = appPage.find('div', id="genresAndManufacturer")
         linksInElement = detailsElement.find_all('a')
