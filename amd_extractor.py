@@ -83,7 +83,7 @@ def crawler(page: BS, familyNumber: int, modelNumber: int):
     except Exception as E:
         print(Fore.WHITE + Back.RED + f"[-] ERROR GRABING THE TABLE: {E}")
 
-    # CRAWLING THEAD =================================================================================================
+    # CRAWLING HEAD =================================================================================================
     # FIND MODEL, CLOCK, CORES, THREADS, HEADINGS' PLACEMNETS IN <THEAD> -> <TR> -> <TH>
     try:
         print(f"[i] SEARCHING FOR TABLE HEADINGS ELEMENT...")
@@ -144,7 +144,7 @@ def crawler(page: BS, familyNumber: int, modelNumber: int):
             for heading, index in headingIndexes.items():
                 if(index == None):
                     continue
-                ROW_DATA[heading] = tableDataElements[index].text
+                ROW_DATA[heading] = tableDataElements[index].text.strip()
                 #print(f"[i] {heading} => {tableDataElements[index].text}")
             print('=' * 100)
             OUTPUT_OBJ[str(familyNumber) + '_' + str(modelNumber) + '_' + str(rowIndex)] = ROW_DATA
