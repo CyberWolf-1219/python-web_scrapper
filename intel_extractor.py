@@ -110,7 +110,7 @@ def crawl_table(tableElement: Tag | NavigableString, tableIndex: int):
 
             cprint(f"PRODUCT NAME => {productName}")
             ROW_DATA["FAMILY"] = productName.split(" ")[0]
-            ROW_DATA["MODEL"] = productName
+            ROW_DATA["MODEL"] = productName.strip()
 
             with open("./data/cpu_models.txt", encoding="UTF-8", mode="a+") as fp:
                 fp.write(productName + '\n')
